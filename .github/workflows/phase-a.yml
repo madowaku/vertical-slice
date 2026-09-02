@@ -1,13 +1,13 @@
-name: Phase A Core
+name: Vertical Slice Core
 
 on:
   push:
-    branches: ["feat/phase-a-core"]
+    branches: ["feat/**"]
   pull_request:
     branches: ["main"]
 
 concurrency:
-  group: phase-a-${{ github.ref }}
+  group: vertical-slice-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,20 +36,20 @@ jobs:
           set -euo pipefail
           timeout 30s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --editor --path . --quit-after 1
 
-      - name: Phase A tests
+      - name: Headless tests
         shell: bash
         run: |
           set -euo pipefail
           set +e
-          timeout 20s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --quit-after 10 tests/test_runner.tscn 2>&1 | tee /tmp/phase-a-tests.log
+          timeout 20s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --quit-after 10 tests/test_runner.tscn 2>&1 | tee /tmp/vertical-slice-tests.log
           test_status=${PIPESTATUS[0]}
           set -e
           if [ "$test_status" -ne 0 ]; then
             echo "Godot test process exited with status $test_status"
             exit "$test_status"
           fi
-          if ! grep -q '^Failures: 0$' /tmp/phase-a-tests.log; then
-            echo "Phase A test completion marker was not found."
+          if ! grep -q '^Failures: 0$' /tmp/vertical-slice-tests.log; then
+            echo "Test completion marker was not found."
             exit 1
           fi
 
@@ -57,8 +57,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phase-a-test-log
-          path: /tmp/phase-a-tests.log
+          name: vertical-slice-test-log
+          path: /tmp/vertical-slice-tests.log
           if-no-files-found: warn
           retention-days: 1
 

@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: ["main"]
 
+concurrency:
+  group: phase-a-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   headless-tests:
     runs-on: ubuntu-latest
@@ -28,13 +32,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --editor --path . --quit-after 1
+          timeout 30s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --editor --path . --quit-after 1
 
       - name: Phase A tests
         shell: bash
         run: |
           set -euo pipefail
-          /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --script res://tests/test_runner.gd
+          timeout 30s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --script res://tests/test_runner.gd
 
       - name: Whitespace check
         run: git diff --check HEAD^

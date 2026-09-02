@@ -10,7 +10,7 @@ const SUITES := [
 ]
 
 
-func _init() -> void:
+func _initialize() -> void:
 	var total_passed := 0
 	var all_failures: Array[String] = []
 	var summaries: Array[String] = []
@@ -25,16 +25,15 @@ func _init() -> void:
 		for failure in suite_failures:
 			all_failures.append("[%s] %s" % [result["name"], failure])
 
+	for summary in summaries:
+		print(summary)
+
 	if all_failures.is_empty():
-		for summary in summaries:
-			print(summary)
 		print("Tests: %d passed" % total_passed)
 		print("Failures: 0")
 		quit(0)
 		return
 
-	for summary in summaries:
-		print(summary)
 	for failure in all_failures:
 		push_error(failure)
 	print("Tests: %d passed" % total_passed)

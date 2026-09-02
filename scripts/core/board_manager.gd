@@ -12,7 +12,7 @@ static func load_board(path: String) -> BoardDefinition:
 	if file == null:
 		return null
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if not parsed is Dictionary:
+	if typeof(parsed) != TYPE_DICTIONARY:
 		return null
 	return BoardDefinition.from_dict(parsed)
 

@@ -30,7 +30,7 @@ static func from_dict(data: Dictionary) -> BoardDefinition:
 	var obstacle_data: Array = data.get("obstacles", [])
 	definition.obstacle_entry_count = obstacle_data.size()
 	for obstacle_variant in obstacle_data:
-		if not obstacle_variant is Dictionary:
+		if typeof(obstacle_variant) != TYPE_DICTIONARY:
 			continue
 		var obstacle: Dictionary = obstacle_variant
 		var cell_data: Array = obstacle.get("cell", [])
@@ -41,7 +41,7 @@ static func from_dict(data: Dictionary) -> BoardDefinition:
 
 	var pattern_data: Array = data.get("patterns", [])
 	for index in range(pattern_data.size()):
-		var cell := Vector2i(index % 6, index / 6)
+		var cell := Vector2i(index % 6, int(index / 6))
 		definition.patterns[cell] = GameTypes.pattern_from_string(str(pattern_data[index]))
 
 	definition.difficulty_note = str(data.get("difficulty_note", ""))

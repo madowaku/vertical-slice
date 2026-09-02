@@ -4,20 +4,6 @@ extends RefCounted
 
 const MAX_TURNS := 8
 
-const LEGAL_TRANSITIONS := {
-	GameTypes.RoundState.WAITING: [GameTypes.RoundState.ROLE_ASSIGN],
-	GameTypes.RoundState.ROLE_ASSIGN: [GameTypes.RoundState.INTRO],
-	GameTypes.RoundState.INTRO: [GameTypes.RoundState.SENSOR_UPDATE],
-	GameTypes.RoundState.SENSOR_UPDATE: [GameTypes.RoundState.TALK],
-	GameTypes.RoundState.TALK: [GameTypes.RoundState.WAIT_ACTION, GameTypes.RoundState.RESOLVE_ACTION, GameTypes.RoundState.RESOLVE_SWING],
-	GameTypes.RoundState.WAIT_ACTION: [GameTypes.RoundState.RESOLVE_ACTION, GameTypes.RoundState.RESOLVE_SWING],
-	GameTypes.RoundState.RESOLVE_ACTION: [GameTypes.RoundState.SENSOR_UPDATE, GameTypes.RoundState.RESOLVE_SWING],
-	GameTypes.RoundState.RESOLVE_SWING: [GameTypes.RoundState.RESULT],
-	GameTypes.RoundState.RESULT: [GameTypes.RoundState.REVEAL],
-	GameTypes.RoundState.REVEAL: [GameTypes.RoundState.COMPLETE],
-	GameTypes.RoundState.COMPLETE: [],
-}
-
 var state: int = GameTypes.RoundState.WAITING
 var turn: int = 0
 var board_state: BoardState
@@ -38,12 +24,36 @@ func setup(definition: BoardDefinition) -> void:
 
 
 func change_state(next_state: int) -> bool:
-	var allowed: Array = LEGAL_TRANSITIONS.get(state, [])
-	if not allowed.has(next_state):
+	if not _is_transition_legal(next_state):
 		return false
 	state = next_state
 	state_history.append(state)
 	return true
+
+
+func _is_transition_legal(next_state: int) -> bool:
+	match state:
+		GameTypes.RoundState.WAITING:
+			return next_state == GameTypes.RoundState.ROLE_ASSIGN
+		GameTypes.RoundState.ROLE_ASSIGN:
+			return next_state == GameTypes.RoundState.INTRO
+		GameTypes.RoundState.INTRO:
+			return next_state == GameTypes.RoundState.SENSOR_UPDATE
+		GameTypes.RoundState.SENSOR_UPDATE:
+			return next_state == GameTypes.RoundState.TALK
+		GameTypes.RoundState.TALK:
+			return next_state in [GameTypes.RoundState.WAIT_ACTION, GameTypes.RoundState.RESOLVE_ACTION, GameTypes.RoundState.RESOLVE_SWING]
+		GameTypes.RoundState.WAIT_ACTION:
+			return next_state in [GameTypes.RoundState.RESOLVE_ACTION, GameTypes.RoundState.RESOLVE_SWING]
+		GameTypes.RoundState.RESOLVE_ACTION:
+			return next_state in [GameTypes.RoundState.SENSOR_UPDATE, GameTypes.RoundState.RESOLVE_SWING]
+		GameTypes.RoundState.RESOLVE_SWING:
+			return next_state == GameTypes.RoundState.RESULT
+		GameTypes.RoundState.RESULT:
+			return next_state == GameTypes.RoundState.REVEAL
+		GameTypes.RoundState.REVEAL:
+			return next_state == GameTypes.RoundState.COMPLETE
+	return false
 
 
 func start_round() -> bool:

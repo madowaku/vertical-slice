@@ -1,4 +1,4 @@
-extends SceneTree
+extends Node
 
 
 const SUITES := [
@@ -10,7 +10,7 @@ const SUITES := [
 ]
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	var total_passed := 0
 	var all_failures: Array[String] = []
 	var summaries: Array[String] = []
@@ -31,11 +31,11 @@ func _initialize() -> void:
 	if all_failures.is_empty():
 		print("Tests: %d passed" % total_passed)
 		print("Failures: 0")
-		quit(0)
+		get_tree().quit(0)
 		return
 
 	for failure in all_failures:
 		push_error(failure)
 	print("Tests: %d passed" % total_passed)
 	print("Failures: %d" % all_failures.size())
-	quit(1)
+	get_tree().quit(1)

@@ -1,0 +1,66 @@
+name: Phase A Core
+
+on:
+  push:
+    branches: ["feat/phase-a-core"]
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: phase-a-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  headless-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          chmod +x /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+          /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --version
+
+      - name: Headless parse
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --editor --path . --quit-after 1
+
+      - name: Phase A tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          timeout 20s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --quit-after 10 tests/test_runner.tscn 2>&1 | tee /tmp/phase-a-tests.log
+          test_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$test_status" -ne 0 ]; then
+            echo "Godot test process exited with status $test_status"
+            exit "$test_status"
+          fi
+          if ! grep -q '^Failures: 0$' /tmp/phase-a-tests.log; then
+            echo "Phase A test completion marker was not found."
+            exit 1
+          fi
+
+      - name: Upload test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-a-test-log
+          path: /tmp/phase-a-tests.log
+          if-no-files-found: warn
+          retention-days: 1
+
+      - name: Whitespace check
+        run: git diff --check origin/main...HEAD

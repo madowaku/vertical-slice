@@ -2,6 +2,13 @@ class_name GameTypes
 extends RefCounted
 
 
+enum PlayerRole {
+	BLIND,
+	GUIDE_SIDE,
+	GUIDE_STEP,
+	GUIDE_PATTERN,
+}
+
 enum Facing {
 	NORTH,
 	EAST,

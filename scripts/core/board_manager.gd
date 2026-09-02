@@ -5,6 +5,12 @@ extends RefCounted
 const WIDTH := 6
 const HEIGHT := 6
 const MAX_TURNS := 8
+const CARDINAL_DIRECTIONS: Array[Vector2i] = [
+	Vector2i.UP,
+	Vector2i.RIGHT,
+	Vector2i.DOWN,
+	Vector2i.LEFT,
+]
 
 
 static func load_board(path: String) -> BoardDefinition:
@@ -94,19 +100,19 @@ static func validate_definition(definition: BoardDefinition) -> Array[String]:
 static func shortest_path_distance(start: Vector2i, goal: Vector2i, obstacles: Dictionary) -> int:
 	if start == goal:
 		return 0
-	var queue: Array = [start]
+	var queue: Array[Vector2i] = [start]
 	var distances := {start: 0}
 	while not queue.is_empty():
 		var current: Vector2i = queue.pop_front()
 		var current_distance: int = int(distances[current])
-		for direction in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
-			var next := current + direction
-			if not is_inside(next) or obstacles.has(next) or distances.has(next):
+		for direction: Vector2i in CARDINAL_DIRECTIONS:
+			var next_cell: Vector2i = current + direction
+			if not is_inside(next_cell) or obstacles.has(next_cell) or distances.has(next_cell):
 				continue
-			if next == goal:
+			if next_cell == goal:
 				return current_distance + 1
-			distances[next] = current_distance + 1
-			queue.append(next)
+			distances[next_cell] = current_distance + 1
+			queue.append(next_cell)
 	return -1
 
 
@@ -125,7 +131,7 @@ static func resolve_action(state: BoardState, action: int) -> Dictionary:
 			"collision": GameTypes.CollisionType.NONE,
 		}
 
-	var target := cell_before + GameTypes.facing_vector(facing_after)
+	var target: Vector2i = cell_before + GameTypes.facing_vector(facing_after)
 	var collision := GameTypes.CollisionType.NONE
 	if not is_inside(target):
 		collision = GameTypes.CollisionType.BOUNDARY

@@ -3,8 +3,9 @@ extends RefCounted
 
 
 static func get_side_radar(blind_cell: Vector2i, blind_facing: int, watermelon_cell: Vector2i) -> int:
-	var delta := watermelon_cell - blind_cell
-	var lateral := delta.dot(GameTypes.right_vector(blind_facing))
+	var delta: Vector2i = watermelon_cell - blind_cell
+	var right: Vector2i = GameTypes.right_vector(blind_facing)
+	var lateral: int = delta.x * right.x + delta.y * right.y
 	if lateral < 0:
 		return GameTypes.SideValue.LEFT
 	if lateral > 0:

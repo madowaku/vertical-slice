@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Godot 4.7.2
         shell: bash
@@ -61,4 +63,4 @@ jobs:
           retention-days: 1
 
       - name: Whitespace check
-        run: git diff --check HEAD^
+        run: git diff --check origin/main...HEAD

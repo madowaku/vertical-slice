@@ -42,9 +42,44 @@ func process_action(action: int) -> Dictionary:
 	var result := round_controller.process_action(action)
 	if not bool(result.get("accepted", false)):
 		return result
-	action_history.append(action)
-	if round_controller.state == GameTypes.RoundState.TALK:
+	if bool(result.get("step", false)):
+		var record: TurnRecord = result["record"]
+		action_history.append(record.action)
 		_capture_current_sensors()
+	elif bool(result.get("swing", false)):
+		action_history.append(GameTypes.BlindAction.SWING)
+	return result
+
+
+func begin_walk(direction: int) -> Dictionary:
+	return round_controller.begin_walk(direction)
+
+
+func advance_step() -> Dictionary:
+	var result := round_controller.advance_step()
+	if bool(result.get("accepted", false)) and bool(result.get("step", false)):
+		var record: TurnRecord = result["record"]
+		action_history.append(record.action)
+		_capture_current_sensors()
+	return result
+
+
+func stop_walk() -> Dictionary:
+	return round_controller.stop_walk()
+
+
+func request_swing() -> Dictionary:
+	return round_controller.request_swing()
+
+
+func continue_after_decision() -> Dictionary:
+	return round_controller.continue_after_decision()
+
+
+func confirm_swing() -> Dictionary:
+	var result := round_controller.confirm_swing()
+	if bool(result.get("accepted", false)) and bool(result.get("swing", false)):
+		action_history.append(GameTypes.BlindAction.SWING)
 	return result
 
 
@@ -68,10 +103,15 @@ func get_projection(role: int = -1) -> Dictionary:
 	var common := {
 		"role": resolved_role,
 		"turn": round_controller.turn,
+		"steps_taken": round_controller.steps_taken,
+		"steps_remaining": round_controller.steps_remaining,
 		"state": round_controller.state,
 		"can_act": round_controller.can_accept_action(),
-		"result_known": round_controller.state >= GameTypes.RoundState.RESULT,
-		"success": round_controller.last_swing_success if round_controller.state >= GameTypes.RoundState.RESULT else false,
+		"can_choose_direction": round_controller.can_choose_direction(),
+		"can_stop": round_controller.can_stop(),
+		"can_confirm_swing": round_controller.can_confirm_swing(),
+		"result_known": round_controller.state >= GameTypes.RoundState.RESULT and round_controller.state <= GameTypes.RoundState.COMPLETE,
+		"success": round_controller.last_swing_success if round_controller.state >= GameTypes.RoundState.RESULT and round_controller.state <= GameTypes.RoundState.COMPLETE else false,
 	}
 
 	if resolved_role == GameTypes.PlayerRole.BLIND:
@@ -100,13 +140,15 @@ func get_reveal_projection() -> Dictionary:
 	for record_variant in round_controller.records:
 		var record: TurnRecord = record_variant
 		records.append({
+			"step": record.step_number,
 			"turn": record.turn_number,
 			"cell_before": _cell_array(record.blind_cell_before),
 			"facing_before": record.blind_facing_before,
 			"side": record.side_value,
-			"step": record.step_value,
+			"step_sensor": record.step_value,
 			"pattern": record.pattern_value,
 			"action": record.action,
+			"walk_direction": record.walk_direction,
 			"cell_after": _cell_array(record.blind_cell_after),
 			"facing_after": record.blind_facing_after,
 			"collision": record.collision,
@@ -114,6 +156,8 @@ func get_reveal_projection() -> Dictionary:
 	return {
 		"board_index": board_index,
 		"turn": round_controller.turn,
+		"steps_taken": round_controller.steps_taken,
+		"steps_remaining": round_controller.steps_remaining,
 		"success": round_controller.last_swing_success,
 		"board": _safe_guide_board(),
 		"watermelon_cell": _cell_array(round_controller.board_state.watermelon_cell),
@@ -135,9 +179,13 @@ func _capture_current_sensors() -> void:
 
 func _append_sensor(kind: String, value: int) -> void:
 	var history: Array = sensor_histories[kind]
-	if not history.is_empty() and int(history[-1]["turn"]) == round_controller.turn:
+	if not history.is_empty() and int(history[-1]["step"]) == round_controller.steps_taken:
 		return
-	history.append({"turn": round_controller.turn, "value": value})
+	history.append({
+		"step": round_controller.steps_taken,
+		"turn": round_controller.steps_taken,
+		"value": value,
+	})
 	sensor_histories[kind] = history
 
 

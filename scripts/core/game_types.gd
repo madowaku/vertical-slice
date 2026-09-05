@@ -2,11 +2,30 @@ class_name GameTypes
 extends RefCounted
 
 
+# Legacy local-debug selector. Product-facing identity is split into
+# PublicRole + GuideSkill + SecretRole below.
 enum PlayerRole {
 	BLIND,
 	GUIDE_SIDE,
 	GUIDE_STEP,
 	GUIDE_PATTERN,
+}
+
+enum PublicRole {
+	BLIND,
+	GUIDE,
+}
+
+enum GuideSkill {
+	NONE,
+	SIDE,
+	STEP,
+	PATTERN,
+}
+
+enum SecretRole {
+	NONE,
+	WATERMELON,
 }
 
 enum Facing {
@@ -75,6 +94,36 @@ enum RoundState {
 	RESOLVE_ACTION,
 	RESOLVE_SWING,
 }
+
+
+static func is_player_role_valid(role: int) -> bool:
+	return role >= PlayerRole.BLIND and role <= PlayerRole.GUIDE_PATTERN
+
+
+static func is_guide_player_role(role: int) -> bool:
+	return role >= PlayerRole.GUIDE_SIDE and role <= PlayerRole.GUIDE_PATTERN
+
+
+static func public_role_for_player_role(role: int) -> int:
+	match role:
+		PlayerRole.BLIND:
+			return PublicRole.BLIND
+		PlayerRole.GUIDE_SIDE, PlayerRole.GUIDE_STEP, PlayerRole.GUIDE_PATTERN:
+			return PublicRole.GUIDE
+	return -1
+
+
+static func guide_skill_for_player_role(role: int) -> int:
+	match role:
+		PlayerRole.BLIND:
+			return GuideSkill.NONE
+		PlayerRole.GUIDE_SIDE:
+			return GuideSkill.SIDE
+		PlayerRole.GUIDE_STEP:
+			return GuideSkill.STEP
+		PlayerRole.GUIDE_PATTERN:
+			return GuideSkill.PATTERN
+	return -1
 
 
 static func facing_from_string(value: String) -> int:

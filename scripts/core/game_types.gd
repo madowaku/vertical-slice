@@ -22,6 +22,7 @@ enum BlindAction {
 	RIGHT,
 	BACK,
 	SWING,
+	STOP,
 }
 
 enum CollisionType {
@@ -59,14 +60,20 @@ enum RoundState {
 	WAITING,
 	ROLE_ASSIGN,
 	INTRO,
+	CONSULT,
+	WALKING,
+	DECISION,
+	RESULT,
+	REVEAL,
+	COMPLETE,
+
+	# Legacy Phase A/B names kept temporarily so the old debug scene still parses.
+	# The v1.2.1 core does not enter these states.
 	SENSOR_UPDATE,
 	TALK,
 	WAIT_ACTION,
 	RESOLVE_ACTION,
 	RESOLVE_SWING,
-	RESULT,
-	REVEAL,
-	COMPLETE,
 }
 
 

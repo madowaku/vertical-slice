@@ -4,7 +4,8 @@ extends RefCounted
 
 const WIDTH := 6
 const HEIGHT := 6
-const MAX_TURNS := 8
+const MAX_STEPS := 8
+const MAX_TURNS := MAX_STEPS # Legacy alias for Phase A/B callers.
 const CARDINAL_DIRECTIONS: Array[Vector2i] = [
 	Vector2i.UP,
 	Vector2i.RIGHT,
@@ -92,8 +93,8 @@ static func validate_definition(definition: BoardDefinition) -> Array[String]:
 			errors.append("watermelon unreachable")
 		elif distance < 3 or distance > 6:
 			errors.append("shortest path must be 3 to 6 moves")
-		elif distance > MAX_TURNS:
-			errors.append("watermelon exceeds turn budget")
+		elif distance > MAX_STEPS:
+			errors.append("watermelon exceeds step budget")
 	return errors
 
 

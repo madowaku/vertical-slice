@@ -4,8 +4,10 @@ extends RefCounted
 
 const FIRST_BOARD := 1
 const LAST_BOARD := 12
+const NO_WATERMELON_ROLE := -1
 
 var current_role: int = GameTypes.PlayerRole.BLIND
+var watermelon_role: int = NO_WATERMELON_ROLE
 var board_index: int = FIRST_BOARD
 var round_controller: RoundController = RoundController.new()
 var sensor_histories: Dictionary = {}
@@ -32,10 +34,40 @@ func start_round(requested_board_index: int = FIRST_BOARD) -> bool:
 
 
 func set_role(role: int) -> bool:
-	if role < GameTypes.PlayerRole.BLIND or role > GameTypes.PlayerRole.GUIDE_PATTERN:
+	if not GameTypes.is_player_role_valid(role):
 		return false
 	current_role = role
 	return true
+
+
+func set_watermelon_role(role: int) -> bool:
+	# Role assignment is round setup data. Never allow the secret role to mutate
+	# while a live round is in progress.
+	if round_controller.state not in [GameTypes.RoundState.WAITING, GameTypes.RoundState.COMPLETE]:
+		return false
+	if role == NO_WATERMELON_ROLE:
+		watermelon_role = NO_WATERMELON_ROLE
+		return true
+	if not GameTypes.is_guide_player_role(role):
+		return false
+	watermelon_role = role
+	return true
+
+
+func get_public_roster_projection() -> Array[Dictionary]:
+	var roster: Array[Dictionary] = []
+	for role in [
+		GameTypes.PlayerRole.BLIND,
+		GameTypes.PlayerRole.GUIDE_SIDE,
+		GameTypes.PlayerRole.GUIDE_STEP,
+		GameTypes.PlayerRole.GUIDE_PATTERN,
+	]:
+		roster.append({
+			"player_slot": role,
+			"public_role": GameTypes.public_role_for_player_role(role),
+			"guide_skill": GameTypes.guide_skill_for_player_role(role),
+		})
+	return roster
 
 
 func process_action(action: int) -> Dictionary:
@@ -100,11 +132,17 @@ func rematch(requested_board_index: int = -1) -> bool:
 
 func get_projection(role: int = -1) -> Dictionary:
 	var resolved_role := current_role if role < 0 else role
-	if resolved_role < GameTypes.PlayerRole.BLIND or resolved_role > GameTypes.PlayerRole.GUIDE_PATTERN:
+	if not GameTypes.is_player_role_valid(resolved_role):
 		return {}
 
 	var common := {
+		# Legacy debug selector. Product UI should use public_role + guide_skill.
 		"role": resolved_role,
+		"public_role": GameTypes.public_role_for_player_role(resolved_role),
+		"guide_skill": GameTypes.guide_skill_for_player_role(resolved_role),
+		# This is only the current player's own secret role. It is never included
+		# in the public roster and therefore cannot reveal another player's secret.
+		"secret_role": _secret_role_for(resolved_role),
 		"turn": round_controller.turn,
 		"steps_taken": round_controller.steps_taken,
 		"steps_remaining": round_controller.steps_remaining,
@@ -121,15 +159,11 @@ func get_projection(role: int = -1) -> Dictionary:
 		"success": round_controller.last_swing_success if round_controller.state >= GameTypes.RoundState.RESULT and round_controller.state <= GameTypes.RoundState.COMPLETE else false,
 	}
 
-	# C2 privacy boundary: the Blind projection contains only public round state,
-	# the Blind's own relative actions, and control permissions. It never receives
-	# absolute facing, cells, board geometry, or any Guide sensor value.
+	# Blind receives no board truth and can never be THE WATERMELON.
 	if resolved_role == GameTypes.PlayerRole.BLIND:
 		return common
 
-	# Guide projections receive exactly one private sensor plus public action
-	# history. They do not receive a board, Blind position/facing, obstacles,
-	# patterns, the watermelon position, or another Guide's sensor.
+	# Every Guide still receives exactly one normal sensor.
 	match resolved_role:
 		GameTypes.PlayerRole.GUIDE_SIDE:
 			common["sensor"] = _sensor_projection("side")
@@ -137,6 +171,12 @@ func get_projection(role: int = -1) -> Dictionary:
 			common["sensor"] = _sensor_projection("step")
 		GameTypes.PlayerRole.GUIDE_PATTERN:
 			common["sensor"] = _sensor_projection("pattern")
+
+	# C3: THE WATERMELON is publicly still a GUIDE. Only that player's own
+	# projection receives the secret full board. Other Guides receive no hint
+	# that a Watermelon player exists at all.
+	if resolved_role == watermelon_role:
+		common["secret_board"] = _watermelon_secret_board()
 	return common
 
 
@@ -168,6 +208,9 @@ func get_reveal_projection() -> Dictionary:
 		"success": round_controller.last_swing_success,
 		"board": _reveal_board(),
 		"watermelon_cell": _cell_array(round_controller.board_state.watermelon_cell),
+		"watermelon_player_present": GameTypes.is_guide_player_role(watermelon_role),
+		"watermelon_player_role": watermelon_role,
+		"public_roster": get_public_roster_projection(),
 		"records": records,
 		"sensor_histories": {
 			"side": sensor_histories["side"].duplicate(true),
@@ -206,6 +249,18 @@ func _sensor_projection(kind: String) -> Dictionary:
 		"value": current_value,
 		"history": history.duplicate(true),
 	}
+
+
+func _secret_role_for(role: int) -> int:
+	if role == watermelon_role and GameTypes.is_guide_player_role(role):
+		return GameTypes.SecretRole.WATERMELON
+	return GameTypes.SecretRole.NONE
+
+
+func _watermelon_secret_board() -> Dictionary:
+	var board := _reveal_board()
+	board["watermelon_cell"] = _cell_array(round_controller.board_state.watermelon_cell)
+	return board
 
 
 func _reveal_board() -> Dictionary:

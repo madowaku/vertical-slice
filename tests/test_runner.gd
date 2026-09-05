@@ -8,6 +8,7 @@ const SUITES := [
 	preload("res://tests/test_round_state.gd"),
 	preload("res://tests/test_turn_record.gd"),
 	preload("res://tests/test_local_debug_session.gd"),
+	preload("res://tests/test_projection_safety.gd"),
 	preload("res://tests/test_debug_scene.gd"),
 ]
 

@@ -100,6 +100,9 @@ func rematch(requested_board_index: int = -1) -> bool:
 
 func get_projection(role: int = -1) -> Dictionary:
 	var resolved_role := current_role if role < 0 else role
+	if resolved_role < GameTypes.PlayerRole.BLIND or resolved_role > GameTypes.PlayerRole.GUIDE_PATTERN:
+		return {}
+
 	var common := {
 		"role": resolved_role,
 		"turn": round_controller.turn,
@@ -109,20 +112,24 @@ func get_projection(role: int = -1) -> Dictionary:
 		"can_act": round_controller.can_accept_action(),
 		"can_choose_direction": round_controller.can_choose_direction(),
 		"can_stop": round_controller.can_stop(),
+		"can_request_swing": round_controller.can_request_swing(),
 		"can_confirm_swing": round_controller.can_confirm_swing(),
+		"can_continue_after_decision": round_controller.can_continue_after_decision(),
+		"walk_direction": round_controller.active_walk_action if round_controller.state == GameTypes.RoundState.WALKING else -1,
+		"action_history": action_history.duplicate(),
 		"result_known": round_controller.state >= GameTypes.RoundState.RESULT and round_controller.state <= GameTypes.RoundState.COMPLETE,
 		"success": round_controller.last_swing_success if round_controller.state >= GameTypes.RoundState.RESULT and round_controller.state <= GameTypes.RoundState.COMPLETE else false,
 	}
 
+	# C2 privacy boundary: the Blind projection contains only public round state,
+	# the Blind's own relative actions, and control permissions. It never receives
+	# absolute facing, cells, board geometry, or any Guide sensor value.
 	if resolved_role == GameTypes.PlayerRole.BLIND:
-		common["facing"] = round_controller.board_state.blind_facing
-		common["action_history"] = action_history.duplicate()
 		return common
 
-	if resolved_role < GameTypes.PlayerRole.GUIDE_SIDE or resolved_role > GameTypes.PlayerRole.GUIDE_PATTERN:
-		return {}
-
-	common["board"] = _safe_guide_board()
+	# Guide projections receive exactly one private sensor plus public action
+	# history. They do not receive a board, Blind position/facing, obstacles,
+	# patterns, the watermelon position, or another Guide's sensor.
 	match resolved_role:
 		GameTypes.PlayerRole.GUIDE_SIDE:
 			common["sensor"] = _sensor_projection("side")
@@ -159,7 +166,7 @@ func get_reveal_projection() -> Dictionary:
 		"steps_taken": round_controller.steps_taken,
 		"steps_remaining": round_controller.steps_remaining,
 		"success": round_controller.last_swing_success,
-		"board": _safe_guide_board(),
+		"board": _reveal_board(),
 		"watermelon_cell": _cell_array(round_controller.board_state.watermelon_cell),
 		"records": records,
 		"sensor_histories": {
@@ -201,7 +208,7 @@ func _sensor_projection(kind: String) -> Dictionary:
 	}
 
 
-func _safe_guide_board() -> Dictionary:
+func _reveal_board() -> Dictionary:
 	var obstacle_entries: Array[Dictionary] = []
 	for cell_variant in round_controller.board_state.obstacles.keys():
 		var cell: Vector2i = cell_variant

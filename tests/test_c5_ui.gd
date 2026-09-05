@@ -30,7 +30,6 @@ func run() -> Dictionary:
 
 	instance.call("_set_view_role", GameTypes.PlayerRole.BLIND)
 	instance.call("_on_direction_pressed", GameTypes.BlindAction.FORWARD)
-	instance.call("_on_walk_beat")
 	instance.call("_set_view_role", GameTypes.PlayerRole.GUIDE_SIDE)
 	var guide_walk: Dictionary = instance.call("get_current_presentation_snapshot")
 	expect_eq(str(guide_walk["mode"]), "guide_walking", "Guide walking screen is distinct")

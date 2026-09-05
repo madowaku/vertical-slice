@@ -12,6 +12,7 @@ const SUITES := [
 	preload("res://tests/test_watermelon_role.gd"),
 	preload("res://tests/test_c4_ui.gd"),
 	preload("res://tests/test_c5_ui.gd"),
+	preload("res://tests/test_c6_playfeel.gd"),
 	preload("res://tests/test_debug_scene.gd"),
 ]
 

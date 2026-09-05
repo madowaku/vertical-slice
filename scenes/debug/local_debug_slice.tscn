@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource path="res://scripts/debug/local_debug_slice.gd" type="Script" id="1_debug"]
+[ext_resource path="res://scripts/debug/local_debug_slice_c2.gd" type="Script" id="1_debug"]
 
 [node name="LocalDebugSlice" type="Control"]
 layout_mode = 3

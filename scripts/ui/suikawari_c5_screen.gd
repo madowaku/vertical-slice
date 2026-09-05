@@ -48,6 +48,15 @@ func get_current_presentation_snapshot() -> Dictionary:
 	}
 
 
+func _on_direction_pressed(action: int) -> void:
+	if not _blind_view_active():
+		return
+	var result := session.begin_walk(action)
+	if bool(result.get("accepted", false)) and is_inside_tree():
+		walk_timer.start(WALK_BEAT_SECONDS)
+	_refresh()
+
+
 func _refresh_public_stage(projection: Dictionary) -> void:
 	match int(projection["state"]):
 		GameTypes.RoundState.CONSULT:

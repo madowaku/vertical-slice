@@ -9,6 +9,7 @@ var screen: Control
 
 
 func _ready() -> void:
+	print("MGSF_CAPTURE_STAGE ready")
 	var output_dir := OS.get_environment("MGSF_CAPTURE_DIR")
 	if output_dir.is_empty():
 		output_dir = ProjectSettings.globalize_path(DEFAULT_OUTPUT_DIR)
@@ -29,6 +30,7 @@ func _ready() -> void:
 	add_child(screen)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	print("MGSF_CAPTURE_STAGE screen-ready")
 
 	screen.call("_start_round", 1)
 	screen.call("_set_view_role", GameTypes.PlayerRole.BLIND)
@@ -43,10 +45,12 @@ func _ready() -> void:
 	screen.call("_on_stop_pressed")
 	await get_tree().process_frame
 
+	print("MGSF_CAPTURE_STAGE near-miss-positioned")
 	var before_path := output_dir.path_join("before-swing.png")
 	if not await _capture_viewport(before_path):
 		return
 
+	print("MGSF_CAPTURE_STAGE before-frame-saved")
 	screen.call("_on_request_swing")
 	screen.call("_on_confirm_swing")
 	await get_tree().process_frame
@@ -69,10 +73,12 @@ func _ready() -> void:
 		_fail("expected verified adjacent miss, got distance=%d" % distance)
 		return
 
+	print("MGSF_CAPTURE_STAGE reveal-ready")
 	var reveal_path := output_dir.path_join("reveal.png")
 	if not await _capture_viewport(reveal_path):
 		return
 
+	print("MGSF_CAPTURE_STAGE reveal-frame-saved")
 	if not _write_capture_files(output_dir):
 		return
 
@@ -81,7 +87,8 @@ func _ready() -> void:
 
 
 func _capture_viewport(path: String) -> bool:
-	await RenderingServer.frame_post_draw
+	for _frame in range(3):
+		await get_tree().process_frame
 	var image := get_viewport().get_texture().get_image()
 	if image == null or image.is_empty():
 		_fail("captured viewport image is empty")

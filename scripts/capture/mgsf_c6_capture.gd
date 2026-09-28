@@ -1,6 +1,7 @@
 extends Node
 
 
+const GameTypes = preload("res://scripts/core/game_types.gd")
 const DEFAULT_OUTPUT_DIR := "user://mgsf-capture"
 const CAPTURE_ID := "vertical-slice-c6-direct"
 const SESSION_ID := "capture-direct-001"
@@ -61,7 +62,7 @@ func _ready() -> void:
 
 	screen.call("_on_reveal_pressed")
 	await get_tree().process_frame
-	var reveal := screen.session.get_reveal_projection()
+	var reveal: Dictionary = screen.session.get_reveal_projection()
 	if reveal.is_empty():
 		_fail("reveal projection was empty")
 		return
